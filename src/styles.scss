@@ -1,0 +1,52 @@
+/* src/styles.scss — GLOBAL */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg:           #f7f7f5;
+  --bg-panel:     #ffffff;
+  --bg-elevated:  #f0f0ed;
+  --bg-hover:     #e8e8e4;
+  --border:       #e0e0db;
+  --border-light: #c8c8c2;
+
+  --text:         #1a1a18;
+  --text-muted:   #6b6b62;
+  --text-dim:     #b0b0a8;
+
+  --accent:       #16a34a;
+  --accent-bg:    #f0faf4;
+  --accent-dim:   #dcfce7;
+
+  --red:          #dc2626;
+  --red-bg:       #fef2f2;
+  --orange:       #ea580c;
+  --orange-bg:    #fff7ed;
+  --yellow:       #ca8a04;
+  --yellow-bg:    #fefce8;
+  --blue:         #2563eb;
+  --blue-bg:      #eff6ff;
+  --gray:         #6b7280;
+  --gray-bg:      #f9fafb;
+
+  --radius:       5px;
+  --radius-lg:    8px;
+  --shadow:       0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}

@@ -1,0 +1,225 @@
+<div class="layout">
+
+  <!-- ── HEADER ──────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header__logo">
+      <span class="header__logo-mark">ng</span>
+      <span class="header__logo-name">health</span>
+    </div>
+
+    @if (guidelinesService.isLoading()) {
+      <span class="header__status header__status--loading">loading guidelines…</span>
+    } @else if (guidelinesService.error()) {
+      <span class="header__status header__status--error">guidelines unavailable</span>
+    } @else {
+      <span class="header__status header__status--ready">guidelines loaded</span>
+    }
+  </header>
+
+  <!-- ── MAIN ────────────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- LEFT: Input panel -->
+    <section class="panel panel--input">
+
+      <!-- File tabs -->
+      <div class="tabs">
+        @for (tab of tabs; track tab) {
+          <button
+            class="tab"
+            [class.tab--active]="activeTab() === tab"
+            (click)="setTab(tab)"
+          >.{{ tab }}</button>
+        }
+      </div>
+
+      <!-- Code textarea -->
+      <div class="editor-wrap">
+        @if (activeTab() === 'ts') {
+          <textarea
+            class="editor"
+            placeholder="Paste your .ts file here…"
+            [value]="tsCode()"
+            (input)="tsCode.set($any($event.target).value)"
+            spellcheck="false"
+          ></textarea>
+        }
+        @if (activeTab() === 'html') {
+          <textarea
+            class="editor"
+            placeholder="Paste your .html template here…"
+            [value]="htmlCode()"
+            (input)="htmlCode.set($any($event.target).value)"
+            spellcheck="false"
+          ></textarea>
+        }
+        @if (activeTab() === 'scss') {
+          <textarea
+            class="editor"
+            placeholder="Paste your .scss file here…"
+            [value]="scssCode()"
+            (input)="scssCode.set($any($event.target).value)"
+            spellcheck="false"
+          ></textarea>
+        }
+      </div>
+
+      <!-- Presets -->
+      <div class="presets">
+        <span class="presets__label">Refactor to</span>
+        <div class="presets__list">
+          @for (preset of presets; track preset.id) {
+            <button
+              class="preset-btn"
+              [class.preset-btn--active]="selectedPreset()?.id === preset.id"
+              (click)="selectPreset(preset)"
+            >{{ preset.icon }} {{ preset.label }}</button>
+          }
+        </div>
+      </div>
+
+      <!-- Custom instruction -->
+      <div class="instruction-wrap">
+        <textarea
+          class="instruction"
+          [placeholder]="instructionHint()"
+          [value]="customInstruction()"
+          (input)="customInstruction.set($any($event.target).value)"
+          rows="2"
+        ></textarea>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <button
+          class="btn btn--primary"
+          [disabled]="!hasCode() || phase() === 'analyzing'"
+          (click)="runAnalysis()"
+        >
+          @if (phase() === 'analyzing') { Analyzing… } @else { Analyze }
+        </button>
+
+        @if (phase() === 'analyzed' || phase() === 'done') {
+          <button
+            class="btn btn--secondary"
+            [disabled]="phase() === 'refactoring'"
+            (click)="runRefactoring()"
+          >
+            @if (phase() === 'refactoring') { Refactoring… } @else { Refactor }
+          </button>
+        }
+
+        @if (phase() !== 'idle') {
+          <button class="btn btn--ghost" (click)="reset()">Reset</button>
+        }
+      </div>
+
+      <!-- Error -->
+      @if (errorMessage()) {
+        <div class="error-msg">⚠ {{ errorMessage() }}</div>
+      }
+
+    </section>
+
+    <!-- RIGHT: Results panel -->
+    <section class="panel panel--results">
+
+      <!-- Empty state -->
+      @if (phase() === 'idle') {
+        <div class="empty-state">
+          <p class="empty-state__text">Paste Angular code on the left and click Analyze</p>
+        </div>
+      }
+
+      <!-- Score + summary -->
+      @if (analysisResult(); as result) {
+        <div class="score-bar">
+          <span class="score" [class]="scoreColor()">{{ result.totalScore }}</span>
+          <span class="score-label">/ 100</span>
+          @if (result.angularVersion) {
+            <span class="version-badge">Angular {{ result.angularVersion }}</span>
+          }
+        </div>
+
+        <p class="summary">{{ result.summary }}</p>
+
+        <!-- Issues by severity -->
+        @let bySeverity = issuesBySeverity();
+
+        @for (group of [
+          { key: 'critical', label: '🔴 Critical', items: bySeverity.critical },
+          { key: 'high',     label: '🟠 High',     items: bySeverity.high },
+          { key: 'medium',   label: '🟡 Medium',   items: bySeverity.medium },
+          { key: 'low',      label: '🔵 Low',       items: bySeverity.low },
+          { key: 'info',     label: '⚪ Info',      items: bySeverity.info }
+        ]; track group.key) {
+          @if (group.items.length > 0) {
+            <div class="issue-group">
+              <h3 class="issue-group__title">{{ group.label }} ({{ group.items.length }})</h3>
+
+              @for (issue of group.items; track issue.id) {
+                <details class="issue-card">
+                  <summary class="issue-card__summary">
+                    <span class="issue-card__title">{{ issue.title }}</span>
+                    @if (issue.line) {
+                      <span class="issue-card__line">line {{ issue.line }}</span>
+                    }
+                  </summary>
+
+                  <div class="issue-card__body">
+                    <p class="issue-card__desc">{{ issue.description }}</p>
+
+                    <div class="issue-card__section">
+                      <span class="issue-card__label">Impact</span>
+                      <p>{{ issue.impact }}</p>
+                    </div>
+
+                    <div class="issue-card__section">
+                      <span class="issue-card__label">Why it matters</span>
+                      <p>{{ issue.whyItMatters }}</p>
+                    </div>
+
+                    <div class="issue-card__section">
+                      <span class="issue-card__label">Alternatives</span>
+                      <ul class="issue-card__list">
+                        @for (alt of issue.alternatives; track alt) {
+                          <li>{{ alt }}</li>
+                        }
+                      </ul>
+                    </div>
+
+                    <div class="issue-card__section">
+                      <span class="issue-card__label">Trade-offs</span>
+                      <p>{{ issue.tradeoffs }}</p>
+                    </div>
+
+                    <div class="issue-card__suggestion">
+                      💡 {{ issue.suggestion }}
+                    </div>
+                  </div>
+                </details>
+              }
+            </div>
+          }
+        }
+
+        <!-- Token usage -->
+        <div class="token-bar">
+          <span>{{ result.tokenUsage.inputTokens | number }} in
+              / {{ result.tokenUsage.outputTokens | number }} out</span>
+          <span class="token-bar__cost">{{ totalCostFormatted() }}</span>
+        </div>
+      }
+
+      <!-- Streaming refactoring output -->
+      @if (phase() === 'refactoring' || phase() === 'done') {
+        <div class="refactored-output">
+          <h3 class="refactored-output__title">Refactored code</h3>
+          <pre class="refactored-output__code">{{ streamingOutput() }}</pre>
+        </div>
+      }
+
+    </section>
+
+  </main>
+</div>

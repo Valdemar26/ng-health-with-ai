@@ -1,0 +1,7 @@
+{
+  "/api": {
+    "target": "https://ng-health.vercel.app",
+    "secure": true,
+    "changeOrigin": true
+  }
+}
